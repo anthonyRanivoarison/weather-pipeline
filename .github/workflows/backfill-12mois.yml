@@ -1,0 +1,55 @@
+name: Backfill 12 mois - Open-Meteo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: feat/air-quality-pipeline
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Backfill extract (Open-Meteo)
+        run: uv run python src/extract.py --backfill
+
+      - name: Transform
+        run: uv run python src/transform.py
+
+      - name: Validate
+        run: uv run python src/validate.py
+
+      - name: Load warehouse (Neon.tech)
+        run: uv run python src/load_warehouse.py
+        env:
+          NEON_DB_URL: ${{ secrets.NEON_DB_URL }}
+
+      - name: Commit and push data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "No new data to commit"
+          else
+            git commit -m "chore(data): backfill 12 months air quality data"
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+            git push
+          fi
