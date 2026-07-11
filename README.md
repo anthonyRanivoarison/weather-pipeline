@@ -1,49 +1,132 @@
-# Weather Pipeline
+# Weather Pipeline — Qualité de l'air
 
-A data engineering project that ingests weather data from the [OpenWeatherMap API](https://openweathermap.org/api) and processes it through an orchestrated ETL pipeline.
+Pipeline de collecte automatique de données de qualité de l'air (AQI) pour 5 villes européennes, avec stockage dimensionnel dans un data warehouse PostgreSQL.
 
-The pipeline fetches real-time weather data, transforms it into a structured format, and stores it for further analysis — demonstrating a production-ready data workflow with modern tooling.
+**Stack** : OpenWeatherMap + Open-Meteo → GitHub Actions → Neon.tech PostgreSQL
 
-**Language:** Python 3.11+
+## Architecture
 
-## Prerequisites
+Voir [ARCHITECTURE.md](ARCHITECTURE.md) pour le détail complet.
 
-- Python 3.11 or later
-- [uv](https://docs.astral.sh/uv/) — modern Python package manager
-- An [OpenWeatherMap API key](https://home.openweathermap.org/users/sign_up) (free tier works)
+```
+extract.py (OWM temps réel / Open-Meteo historique)
+    → data/raw/{ville}/{horodatage}.json
+    → transform.py → data/clean/air_quality.csv
+    → validate.py → vérifie le contrat
+    → load_warehouse.py → Neon.tech PostgreSQL
+```
+
+## Prérequis
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/)
+- Une clé [OpenWeatherMap](https://home.openweathermap.org/users/sign_up) (gratuite)
+- Un compte [Neon.tech](https://neon.tech) (gratuit)
 
 ## Installation
 
 ```bash
+git clone <url-du-repo>
+cd weather-pipeline
+git checkout feat/air-quality-pipeline
 uv sync
 ```
 
-All dependencies are resolved and locked via `uv.lock`.
-
 ## Configuration
 
-Create a `.env` file in the project root:
+Copier `.env.example` vers `.env` et remplir les valeurs :
 
 ```env
-OPENWEATHERMAP_API_KEY=your_api_key_here
+OPENWEATHERMAP_API_KEY=votre_clé_owm
+NEON_DB_URL=postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require
 ```
 
-The project reads this file automatically via `python-dotenv` on startup.
+## Utilisation
 
-## Usage
+### Extraction temps réel (OpenWeatherMap)
 
 ```bash
-uv run python src/main.py
+uv run python src/extract.py
 ```
 
-You will be prompted to enter a city name. The script fetches current weather data for that city and outputs the raw JSON response. Subsequent development will add transformation, storage, and Airflow orchestration steps.
+### Backfill historique (Open-Meteo, 12 mois)
 
-## Project Structure
+```bash
+uv run python src/extract.py --backfill
+```
+
+### Transformation raw → clean
+
+```bash
+uv run python src/transform.py
+```
+
+### Validation du contrat clean
+
+```bash
+uv run python src/validate.py
+```
+
+### Chargement du warehouse (Neon.tech)
+
+```bash
+uv run python src/load_warehouse.py
+```
+
+### Pipeline complet (une étape)
+
+```bash
+uv run python src/extract.py && \
+uv run python src/transform.py && \
+uv run python src/validate.py && \
+uv run python src/load_warehouse.py
+```
+
+## Pipeline automatisé (GitHub Actions)
+
+Le workflow `.github/workflows/pipeline-horaire.yml` s'exécute automatiquement toutes les heures via GitHub Actions. Il exécute la séquence complète et persist les données dans le repo et le warehouse Neon.tech.
+
+Pour activer le pipeline automatique :
+
+1. Pousser la branche `feat/air-quality-pipeline` vers GitHub
+2. Configurer les secrets dans **Settings → Secrets and variables → Actions** :
+   - `OWM_API_KEY` — votre clé OpenWeatherMap
+   - `NEON_DB_URL` — chaîne de connexion Neon.tech
+3. Activer les workflows dans l'onglet **Actions**
+
+## Villes surveillées
+
+| Ville | Pays | Latitude | Longitude |
+|-------|------|----------|-----------|
+| Paris | FR | 48.8566 | 2.3522 |
+| London | GB | 51.5074 | -0.1278 |
+| Berlin | DE | 52.5200 | 13.4050 |
+| Madrid | ES | 40.4168 | -3.7038 |
+| Rome | IT | 41.9028 | 12.4964 |
+
+## Contrat de données (clean/air_quality.csv)
+
+Une ligne par ville et par heure, tri chronologique, sans doublons. Consulter [ARCHITECTURE.md](ARCHITECTURE.md#contrat-de-données) pour la liste complète des colonnes et unités.
+
+## Structure du dépôt
 
 ```
 weather-pipeline/
-├── pyproject.toml      # Project metadata and dependencies
-├── uv.lock             # Lockfile (uv)
-└── src/
-    └── main.py         # Pipeline entry point
+├── .github/workflows/
+│   ├── pipeline-horaire.yml     # Exécution horaire automatique
+│   └── backfill-12mois.yml       # Backfill historique (exécution unique)
+├── src/
+│   ├── extract.py               # Appels API (OWM + Open-Meteo)
+│   ├── transform.py             # raw/ → clean/air_quality.csv
+│   ├── validate.py              # Validation du contrat clean/
+│   └── load_warehouse.py        # Chargement dans PostgreSQL (Neon.tech)
+├── scripts/
+│   └── schema.sql               # DDL du warehouse (schéma étoile)
+├── data/
+│   ├── raw/{ville}/             # Fichiers JSON bruts (1 par appel)
+│   └── clean/air_quality.csv    # CSV unique nettoyé
+├── ARCHITECTURE.md              # Documentation d'architecture
+├── TODO.md                      # Suivi des tâches
+├── pyproject.toml               # Dépendances
+└── README.md                    # Ce fichier
 ```
