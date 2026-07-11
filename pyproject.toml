@@ -1,13 +1,12 @@
 [project]
-name = "dataflow"
-version = "0.1.0"
-description = "Add your description here"
+name = "weather-pipeline"
+version = "0.2.0"
+description = "Pipeline qualité de l'air : collecte OpenWeatherMap + Open-Meteo → clean CSV → PostgreSQL"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "apache-airflow>=3.2.2",
     "pandas>=3.0.3",
-    "pyarrow>=24.0.0",
+    "psycopg2-binary>=2.9",
     "python-dotenv>=1.2.2",
     "requests>=2.34.2",
     "sqlalchemy>=2.0.51",
