@@ -69,6 +69,7 @@
 - [ ] **7.4** Exécuter `uv sync` sur une machine avec uv (installation validée)
 - [ ] **7.5** Tester le pipeline complet en local avec une clé OWM
 
+
 ## ✅ Phase 8 — Backfill
 
 - [x] **8.1** Exécuter le workflow `backfill-12mois.yml` depuis GitHub Actions
@@ -76,6 +77,8 @@
 - [x] **8.3** Vérifier que `raw/` contient les 5 villes × 12 mois
 - [x] **8.4** Vérifier que `clean/air_quality.csv` est correct via `validate.py`
 - [x] **8.5** Vérifier que Neon.tech contient les données
+=======
+
 
 ## 🔲 Phase 9 — Pipeline horaire
 

@@ -67,7 +67,10 @@ def extract_backfill() -> int:
     end_str = end.strftime("%Y-%m-%d")
 
     params = {
+      feat/backfill-and-fixes
         "hourly": "european_aqi,pm2_5,pm10,nitrogen_dioxide,ozone,sulphur_dioxide,carbon_monoxide,nitrogen_monoxide,ammonia",
+
+         main
         "start_date": start_str,
         "end_date": end_str,
         "timezone": "UTC",
