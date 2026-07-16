@@ -87,11 +87,27 @@ def _clean_row(row: dict) -> dict | None:
     Retourne None si la ligne est inexploitable (pas de datetime)."""
     if not row.get("datetime"):
         return None
-        
+
     row["city"] = (row.get("city") or "unknown").strip().title()
     row["country"] = (row.get("country") or "").strip().upper()
 
     return row
+
+def _to_float(val, lo=None):
+        """Cast en float, coerce en None si invalide ou hors borne physique."""
+        try:
+            f = float(val)
+        except (TypeError, ValueError):
+            return None
+        if lo is not None and f < lo:
+            return None
+        return f
+
+    lat = _to_float(row.get("latitude"))
+    row["latitude"] = lat if lat is not None and -90 <= lat <= 90 else None
+
+    lon = _to_float(row.get("longitude"))
+    row["longitude"] = lon if lon is not None and -180 <= lon <= 180 else None
 
 def _parse_file(path: str) -> list[dict] | None:
     try:
