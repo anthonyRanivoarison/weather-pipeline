@@ -20,7 +20,7 @@
   - [x] `extract_current()` → OWM temps réel → `raw/{city}/{YYYY-MM-DD}_{HH}.json`
   - [x] `extract_backfill()` → Open-Meteo 12 mois → `raw/{city}/backfill_*.json`
   - [x] Métadonnée `_meta.source` dans chaque fichier pour identifier la provenance
-- [ ] **2.2** Tester l'extraction sur une ville (à faire quand une clé API sera disponible)
+- [x] **2.2** Tester l'extraction sur une ville (à faire quand une clé API sera disponible)
 
 ## ✅ Phase 3 — Transformation (faite)
 
@@ -31,7 +31,7 @@
   - [x] Déduplication (même ville + même heure)
   - [x] Tri chronologique
   - [x] Écrit `data/clean/air_quality.csv`
-- [ ] **3.2** Tester la transformation (quand raw/ contient des données)
+- [x] **3.2** Tester la transformation (quand raw/ contient des données)
 
 ## ✅ Phase 4 — Validation (faite)
 
