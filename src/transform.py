@@ -109,6 +109,12 @@ def _clean_row(row: dict) -> dict | None:
 
     for pollutant in ("co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3"):
         row[pollutant] = _to_float(row.get(pollutant), lo=0)
+    
+    aqi_raw = row.get("aqi")
+    try:
+        row["aqi"] = int(aqi_raw)
+    except (TypeError, ValueError):
+        row["aqi"] = None
 
     return row
 
