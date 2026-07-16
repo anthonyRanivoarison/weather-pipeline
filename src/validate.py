@@ -49,7 +49,7 @@ def validate() -> int:
         if aqi_raw:
             try:
                 aqi = int(aqi_raw)
-                if aqi < 0 or aqi > 5:
+                if aqi < 1 or aqi > 5:
                     errors.append(f"Row {i}: aqi={aqi} out of range [0-5]")
             except ValueError:
                 errors.append(f"Row {i}: aqi='{aqi_raw}' not an integer")
