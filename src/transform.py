@@ -3,7 +3,7 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-
+from utils.convert import convert_eaqi_to_owm
 RAW_DIR = "data/raw"
 CLEAN_DIR = "data/clean"
 CLEAN_CSV = os.path.join(CLEAN_DIR, "air_quality.csv")
@@ -69,15 +69,15 @@ def _parse_openmeteo(data: dict) -> list[dict]:
             "latitude": lat,
             "longitude": lon,
             "datetime": t.replace("T", "T") + ":00Z",
-            "aqi": aqi,
-            "co": hourly.get("co", [None] * len(times))[i],
-            "no": hourly.get("no", [None] * len(times))[i],
-            "no2": hourly.get("no2", [None] * len(times))[i],
-            "o3": hourly.get("o3", [None] * len(times))[i],
-            "so2": hourly.get("so2", [None] * len(times))[i],
+            "aqi": convert_eaqi_to_owm(aqi),
+            "co": hourly.get("carbon_monoxide", [None] * len(times))[i],
+            "no": hourly.get("nitrogen_monoxide", [None] * len(times))[i],
+            "no2": hourly.get("nitrogen_dioxide", [None] * len(times))[i],
+            "o3": hourly.get("ozone", [None] * len(times))[i],
+            "so2": hourly.get("sulphur_dioxide", [None] * len(times))[i],
             "pm2_5": hourly.get("pm2_5", [None] * len(times))[i],
             "pm10": hourly.get("pm10", [None] * len(times))[i],
-            "nh3": hourly.get("nh3", [None] * len(times))[i],
+            "nh3": hourly.get("ammonia", [None] * len(times))[i],
         })
     return rows
 
