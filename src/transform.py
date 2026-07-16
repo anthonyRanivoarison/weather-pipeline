@@ -107,6 +107,9 @@ def _clean_row(row: dict) -> dict | None:
     lon = _to_float(row.get("longitude"))
     row["longitude"] = lon if lon is not None and -180 <= lon <= 180 else None
 
+    for pollutant in ("co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3"):
+        row[pollutant] = _to_float(row.get(pollutant), lo=0)
+
     return row
 
 def _parse_file(path: str) -> list[dict] | None:
