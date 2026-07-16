@@ -87,6 +87,9 @@ def _clean_row(row: dict) -> dict | None:
     Retourne None si la ligne est inexploitable (pas de datetime)."""
     if not row.get("datetime"):
         return None
+        
+    row["city"] = (row.get("city") or "unknown").strip().title()
+    row["country"] = (row.get("country") or "").strip().upper()
 
     return row
 
