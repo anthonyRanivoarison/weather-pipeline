@@ -82,9 +82,7 @@ def _parse_openmeteo(data: dict) -> list[dict]:
     return rows
 
 def _clean_row(row: dict) -> dict | None:
-    """Nettoie une mesure de qualite de l'air : strip des strings,
-    cast numerique, bornes physiques/geographiques.
-    Retourne None si la ligne est inexploitable (pas de datetime)."""
+  
     if not row.get("datetime"):
         return None
 
@@ -92,7 +90,7 @@ def _clean_row(row: dict) -> dict | None:
     row["country"] = (row.get("country") or "").strip().upper()
 
     def _to_float(val, lo=None):
-        """Cast en float, coerce en None si invalide ou hors borne physique."""
+
         try:
             f = float(val)
         except (TypeError, ValueError):
@@ -146,6 +144,8 @@ def transform():
             parsed = _parse_file(path)
             if parsed:
                 all_rows.extend(parsed)
+                
+    all_rows = [r for r in (_clean_row(row) for row in all_rows) if r is not None]            
 
     seen = set()
     unique = []
