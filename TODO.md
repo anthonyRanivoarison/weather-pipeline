@@ -79,9 +79,9 @@
 
 ## 🔲 Phase 9 — Pipeline horaire
 
-- [ ] **9.1** Vérifier que le cron `0 * * * *` déclenche le workflow
-- [ ] **9.2** Vérifier les commits automatiques de `data/` dans le repo
-- [ ] **9.3** Vérifier que les données s'accumulent dans Neon.tech
+- [x] **9.1** Vérifier que le cron `0 * * * *` déclenche le workflow
+- [x] **9.2** Vérifier les commits automatiques de `data/` dans le repo
+- [x] **9.3** Vérifier que les données s'accumulent dans Neon.tech
 - [ ] **9.4** Capturer l'historique des exécutions (5+ jours, heures décalées)
 
 ## 🔲 Phase 10 — Documentation finale
