@@ -1,0 +1,1 @@
+{"coord": {"lon": 2.3522, "lat": 48.8566}, "list": [{"main": {"aqi": 2}, "components": {"co": 105.14, "no": 0, "no2": 1.93, "o3": 98.38, "so2": 0.74, "pm2_5": 5.16, "pm10": 6.63, "nh3": 3.84}, "dt": 1784415489}], "_meta": {"city": "paris", "country": "FR", "source": "openweathermap"}}
