@@ -1,0 +1,1 @@
+{"coord": {"lon": -0.1278, "lat": 51.5074}, "list": [{"main": {"aqi": 2}, "components": {"co": 105.92, "no": 0, "no2": 18.85, "o3": 81.81, "so2": 11.37, "pm2_5": 13.56, "pm10": 19.35, "nh3": 0.33}, "dt": 1784690125}], "_meta": {"city": "london", "country": "GB", "source": "openweathermap"}}
