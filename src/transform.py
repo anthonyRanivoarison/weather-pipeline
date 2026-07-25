@@ -48,6 +48,18 @@ def _parse_owm(data: dict) -> list[dict]:
     return rows
 
 
+OM_TO_SHORT = {
+    "carbon_monoxide": "co",
+    "nitrogen_monoxide": "no",
+    "nitrogen_dioxide": "no2",
+    "ozone": "o3",
+    "sulphur_dioxide": "so2",
+    "pm2_5": "pm2_5",
+    "pm10": "pm10",
+    "ammonia": "nh3",
+}
+
+
 def _parse_openmeteo(data: dict) -> list[dict]:
     meta = data.get("_meta", {})
     city = meta.get("city", "unknown")
@@ -62,23 +74,32 @@ def _parse_openmeteo(data: dict) -> list[dict]:
 
     rows = []
     for i, t in enumerate(times):
-        aqi = hourly.get("european_aqi", [None] * len(times))[i]
-        rows.append({
+        raw_aqi = hourly.get("european_aqi", [None] * len(times))[i]
+        # Map Open-Meteo European AQI (0-100) → standard 1-5 scale
+        if raw_aqi is not None:
+            if raw_aqi <= 20:
+                aqi = 1
+            elif raw_aqi <= 40:
+                aqi = 2
+            elif raw_aqi <= 60:
+                aqi = 3
+            elif raw_aqi <= 80:
+                aqi = 4
+            else:
+                aqi = 5
+        else:
+            aqi = None
+        row = {
             "city": city,
             "country": country,
             "latitude": lat,
             "longitude": lon,
             "datetime": t.replace("T", "T") + ":00Z",
             "aqi": aqi,
-            "co": hourly.get("co", [None] * len(times))[i],
-            "no": hourly.get("no", [None] * len(times))[i],
-            "no2": hourly.get("no2", [None] * len(times))[i],
-            "o3": hourly.get("o3", [None] * len(times))[i],
-            "so2": hourly.get("so2", [None] * len(times))[i],
-            "pm2_5": hourly.get("pm2_5", [None] * len(times))[i],
-            "pm10": hourly.get("pm10", [None] * len(times))[i],
-            "nh3": hourly.get("nh3", [None] * len(times))[i],
-        })
+        }
+        for om_key, short_key in OM_TO_SHORT.items():
+            row[short_key] = hourly.get(om_key, [None] * len(times))[i]
+        rows.append(row)
     return rows
 
 

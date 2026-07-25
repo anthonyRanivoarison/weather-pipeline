@@ -1,0 +1,1 @@
+{"coord": {"lon": 12.4964, "lat": 41.9028}, "list": [{"main": {"aqi": 3}, "components": {"co": 99.02, "no": 0, "no2": 0.28, "o3": 93.49, "so2": 4.75, "pm2_5": 48.35, "pm10": 60.44, "nh3": 0}, "dt": 1784069186}], "_meta": {"city": "rome", "country": "IT", "source": "openweathermap"}}

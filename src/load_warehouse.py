@@ -4,6 +4,7 @@ import sys
 from datetime import datetime, timezone
 
 import psycopg2
+from psycopg2.extras import execute_values
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,7 +15,7 @@ DB_URL = os.getenv("NEON_DB_URL")
 
 
 def _dict_to_dim_time(dt_str: str) -> dict:
-    dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+    dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00")).replace(tzinfo=None)
     return {
         "datetime": dt,
         "date": dt.date(),
@@ -60,72 +61,91 @@ def load() -> int:
 
     try:
         with conn.cursor() as cur:
-            time_ids = {}
+            # Batch dim_time — unique datetimes only
+            time_rows = []
+            seen_times = set()
             for row in rows:
-                t = _dict_to_dim_time(row["datetime"])
-                cur.execute(
-                    """INSERT INTO dim_time (datetime, date, hour, day_of_week, is_weekend, month, year)
-                       VALUES (%(datetime)s, %(date)s, %(hour)s, %(day_of_week)s, %(is_weekend)s, %(month)s, %(year)s)
-                       ON CONFLICT (datetime) DO NOTHING""",
-                    t,
-                )
+                dt_key = row["datetime"]
+                if dt_key not in seen_times:
+                    seen_times.add(dt_key)
+                    t = _dict_to_dim_time(dt_key)
+                    time_rows.append((
+                        t["datetime"], t["date"], t["hour"],
+                        t["day_of_week"], t["is_weekend"],
+                        t["month"], t["year"],
+                    ))
+
+            execute_values(
+                cur,
+                """INSERT INTO dim_time (datetime, date, hour, day_of_week, is_weekend, month, year)
+                   VALUES %s ON CONFLICT (datetime) DO NOTHING""",
+                time_rows,
+            )
 
             cur.execute("SELECT id, datetime FROM dim_time")
-            for tid, dt in cur.fetchall():
-                time_ids[dt.isoformat()] = tid
+            time_ids = {dt.replace(tzinfo=None).isoformat(): tid for tid, dt in cur.fetchall()}
 
-            city_ids = {}
+            # Batch dim_city
+            city_rows = []
             cities_seen = set()
             for row in rows:
                 name = row["city"]
                 if name in cities_seen:
                     continue
                 cities_seen.add(name)
-                cur.execute(
-                    """INSERT INTO dim_city (city_name, country, latitude, longitude)
-                       VALUES (%(city)s, %(country)s, %(latitude)s, %(longitude)s)
-                       ON CONFLICT (city_name) DO NOTHING""",
-                    row,
-                )
+                city_rows.append((
+                    row["city"], row["country"],
+                    float(row["latitude"]), float(row["longitude"]),
+                ))
+
+            execute_values(
+                cur,
+                """INSERT INTO dim_city (city_name, country, latitude, longitude)
+                   VALUES %s ON CONFLICT (city_name) DO NOTHING""",
+                city_rows,
+            )
 
             cur.execute("SELECT id, city_name FROM dim_city")
-            for cid, cname in cur.fetchall():
-                city_ids[cname] = cid
+            city_ids = {cn: cid for cid, cn in cur.fetchall()}
 
-            loaded = 0
+            # Batch fact_air_quality
+            fact_rows = []
             for row in rows:
-                dt_key = row["datetime"].replace("Z", "+00:00")
-                dt_key = datetime.fromisoformat(dt_key).isoformat()
+                dt_key = datetime.fromisoformat(
+                    row["datetime"].replace("Z", "+00:00")
+                ).replace(tzinfo=None).isoformat()
                 tid = time_ids.get(dt_key)
                 cid = city_ids.get(row["city"])
                 if tid is None or cid is None:
                     continue
-                cur.execute(
-                    """INSERT INTO fact_air_quality
-                           (time_id, city_id, aqi, co, no, no2, o3, so2, pm2_5, pm10, nh3)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                       ON CONFLICT (time_id, city_id)
-                       DO UPDATE SET
-                           aqi = EXCLUDED.aqi, co = EXCLUDED.co, no = EXCLUDED.no,
-                           no2 = EXCLUDED.no2, o3 = EXCLUDED.o3, so2 = EXCLUDED.so2,
-                           pm2_5 = EXCLUDED.pm2_5, pm10 = EXCLUDED.pm10, nh3 = EXCLUDED.nh3""",
-                    (
-                        tid, cid,
-                        int(row["aqi"]) if row.get("aqi") else None,
-                        float(row["co"]) if row.get("co") else None,
-                        float(row["no"]) if row.get("no") else None,
-                        float(row["no2"]) if row.get("no2") else None,
-                        float(row["o3"]) if row.get("o3") else None,
-                        float(row["so2"]) if row.get("so2") else None,
-                        float(row["pm2_5"]) if row.get("pm2_5") else None,
-                        float(row["pm10"]) if row.get("pm10") else None,
-                        float(row["nh3"]) if row.get("nh3") else None,
-                    ),
-                )
-                loaded += 1
+                fact_rows.append((
+                    tid, cid,
+                    int(row["aqi"]) if row.get("aqi") else None,
+                    float(row["co"]) if row.get("co") else None,
+                    float(row["no"]) if row.get("no") else None,
+                    float(row["no2"]) if row.get("no2") else None,
+                    float(row["o3"]) if row.get("o3") else None,
+                    float(row["so2"]) if row.get("so2") else None,
+                    float(row["pm2_5"]) if row.get("pm2_5") else None,
+                    float(row["pm10"]) if row.get("pm10") else None,
+                    float(row["nh3"]) if row.get("nh3") else None,
+                ))
+
+            execute_values(
+                cur,
+                """INSERT INTO fact_air_quality
+                       (time_id, city_id, aqi, co, no, no2, o3, so2, pm2_5, pm10, nh3)
+                   VALUES %s
+                   ON CONFLICT (time_id, city_id)
+                   DO UPDATE SET
+                       aqi = EXCLUDED.aqi, co = EXCLUDED.co, no = EXCLUDED.no,
+                       no2 = EXCLUDED.no2, o3 = EXCLUDED.o3, so2 = EXCLUDED.so2,
+                       pm2_5 = EXCLUDED.pm2_5, pm10 = EXCLUDED.pm10, nh3 = EXCLUDED.nh3""",
+                fact_rows,
+            )
 
         conn.commit()
-        print(f"Loaded {loaded} rows into fact_air_quality")
+        print(f"Loaded {len(fact_rows)} rows into fact_air_quality")
     except Exception as e:
         conn.rollback()
         print(f"ERROR: load failed: {e}", file=sys.stderr)
