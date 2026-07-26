@@ -1,0 +1,1 @@
+{"coord": {"lon": -3.7024, "lat": 40.4242}, "list": [{"main": {"aqi": 5}, "components": {"co": 1215.66, "no": 0, "no2": 12.33, "o3": 220.39, "so2": 3.69, "pm2_5": 223.24, "pm10": 224.1, "nh3": 9.42}, "dt": 1785096693}], "_meta": {"city": "madrid", "country": "ES", "source": "openweathermap"}}
