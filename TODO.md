@@ -63,10 +63,10 @@
 
 ## 🔲 Phase 7 — Intégration & Déploiement
 
-- [ ] **7.1** Pousser la branche `feat/air-quality-pipeline` vers GitHub
+- [x] **7.1** Pousser la branche `feat/air-quality-pipeline` vers GitHub
 - [ ] **7.2** Configurer les secrets dans Settings → Secrets and variables → Actions
 - [ ] **7.3** Vérifier que le PAT (GITHUB_TOKEN) a les droits d'écriture
-- [ ] **7.4** Exécuter `uv sync` sur une machine avec uv (installation validée)
+- [x] **7.4** Exécuter `uv sync` sur une machine avec uv (installation validée)
 - [ ] **7.5** Tester le pipeline complet en local avec une clé OWM
 
 

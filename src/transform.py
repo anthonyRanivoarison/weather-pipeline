@@ -3,7 +3,7 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-
+from utils.convert import convert_eaqi_to_owm
 RAW_DIR = "data/raw"
 CLEAN_DIR = "data/clean"
 CLEAN_CSV = os.path.join(CLEAN_DIR, "air_quality.csv")

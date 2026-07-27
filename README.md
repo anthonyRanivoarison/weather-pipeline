@@ -130,3 +130,19 @@ weather-pipeline/
 ├── pyproject.toml               # Dépendances
 └── README.md                    # Ce fichier
 ```
+
+## Image prête au lancement
+
+### 1. Construire l'image Docker
+Placez-vous à la racine du projet (là où se trouve le fichier `Dockerfile`) et exécutez :
+```bash
+docker build -t weather-pipeline .
+```
+
+### 2. Lancer le conteneur en local
+Assurez-vous d'avoir un fichier `.env` configuré à la racine du projet (sur le modèle du fichier `.env.example`). 
+
+Lancez ensuite le conteneur avec la commande suivante :
+```bash
+docker run --rm -it --env-file .env weather-pipeline
+```
