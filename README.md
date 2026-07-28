@@ -146,3 +146,14 @@ Lancez ensuite le conteneur avec la commande suivante :
 ```bash
 docker run --rm -it --env-file .env weather-pipeline
 ```
+
+## Trous connus dans les données
+
+Le pipeline horaire utilise un déclencheur `schedule: cron` GitHub Actions
+(`0 * * * *`). GitHub Actions ne garantit pas une exécution pile à l'heure :
+en période de forte charge, les runs planifiés peuvent être retardés de
+quelques minutes à plusieurs heures, voire sautés (comportement documenté
+par GitHub). Cela explique les écarts irréguliers entre certains points
+horaires dans clean/air_quality.csv (voir historique des commits
+`chore(data): automatic pipeline run` pour le détail exact des horaires
+réels d'exécution).
