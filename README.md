@@ -1,7 +1,5 @@
 
-## Équipe / Membres du groupe
 
-* **Andy [ANDRIANASOLO]** (STD24217) — (K2)
 
 
 # Weather Pipeline — Qualité de l'air
@@ -9,6 +7,14 @@
 Pipeline de collecte automatique de données de qualité de l'air (AQI) pour 5 villes européennes, avec stockage dimensionnel dans un data warehouse PostgreSQL.
 
 **Stack** : OpenWeatherMap + Open-Meteo → GitHub Actions → Neon.tech PostgreSQL
+
+## Équipe / Membres du groupe
+
+* **ANDRIANASOLO Andy** (STD24217) — K2
+* **ANDRIAMBOAVONJY Rantoniaina Ambinintsoa** (STD24022) — K2
+* **RANAIVOSON Miharintsoa Mikaiah** (STD24116) — K1
+* **RANDRIANALISETRA Sahaniaina Shaïm** (STD23093) --  K2
+* **RANIVOARISON Tsioriniaina Antonio** (STD24213) — K1
 
 ## Architecture
 
