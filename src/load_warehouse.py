@@ -28,7 +28,7 @@ def parse_datetime(dt_str: str) -> datetime:
 
 
 def clean_city_name(city: str) -> str:
-    """Normalise le nom d'une ville pour éviter les problèmes d'espaces/casse."""
+    """Normalise le nom d'une ville."""
     return city.strip()
 
 
@@ -60,6 +60,10 @@ def value_int(value):
 
 def load() -> int:
 
+    # ---------------------------------------------------------
+    # 1. Vérification de la connexion Neon
+    # ---------------------------------------------------------
+
     if not DB_URL:
         print(
             "ERROR: NEON_DB_URL not set",
@@ -67,7 +71,9 @@ def load() -> int:
         )
         return 1
 
-
+    # ---------------------------------------------------------
+    # 2. Vérification du fichier CSV
+    # ---------------------------------------------------------
 
     if not os.path.exists(CLEAN_CSV):
         print(
@@ -77,8 +83,13 @@ def load() -> int:
         return 1
 
     try:
-        with open(CLEAN_CSV, newline="", encoding="utf-8") as f:
+        with open(
+            CLEAN_CSV,
+            newline="",
+            encoding="utf-8"
+        ) as f:
             rows = list(csv.DictReader(f))
+
     except Exception as e:
         print(
             f"ERROR: cannot read {CLEAN_CSV}: {e}",
@@ -95,10 +106,14 @@ def load() -> int:
         )
         return 0
 
+    # ---------------------------------------------------------
+    # 3. Connexion à Neon
+    # ---------------------------------------------------------
 
     try:
         conn = psycopg2.connect(DB_URL)
         conn.autocommit = False
+
     except Exception as e:
         print(
             f"ERROR: cannot connect to database: {e}",
@@ -108,6 +123,9 @@ def load() -> int:
 
     try:
 
+        # -----------------------------------------------------
+        # 4. Création du schéma
+        # -----------------------------------------------------
 
         if not os.path.exists(SCHEMA_SQL):
             print(
@@ -117,7 +135,10 @@ def load() -> int:
             conn.close()
             return 1
 
-        with open(SCHEMA_SQL, encoding="utf-8") as f:
+        with open(
+            SCHEMA_SQL,
+            encoding="utf-8"
+        ) as f:
             ddl = f.read()
 
         with conn.cursor() as cur:
@@ -127,10 +148,14 @@ def load() -> int:
 
         print("Database schema ready.")
 
+        # -----------------------------------------------------
+        # 5. Normalisation des données
+        # -----------------------------------------------------
 
         normalized_rows = []
 
         for index, row in enumerate(rows, start=1):
+
             try:
                 city = clean_city_name(row["city"])
                 country = row["country"].strip()
@@ -178,11 +203,16 @@ def load() -> int:
             f"{len(normalized_rows)}"
         )
 
+        # -----------------------------------------------------
+        # 6. DIM_TIME
+        # -----------------------------------------------------
 
         unique_times = {}
 
         for row in normalized_rows:
+
             dt = row["datetime"]
+
             unique_times[dt] = (
                 dt,
                 dt.date(),
@@ -198,6 +228,7 @@ def load() -> int:
         print(f"Unique timestamps: {len(time_rows)}")
 
         with conn.cursor() as cur:
+
             execute_values(
                 cur,
                 """
@@ -218,7 +249,6 @@ def load() -> int:
                 time_rows,
             )
 
-            # Récupération directe des IDs après insertion.
             cur.execute(
                 """
                 SELECT id, datetime
@@ -229,18 +259,28 @@ def load() -> int:
             time_ids = {}
 
             for time_id, dt in cur.fetchall():
+
                 if dt is not None:
-                    time_ids[dt.replace(tzinfo=None)] = time_id
+                    normalized_dt = dt.replace(tzinfo=None)
+                    time_ids[normalized_dt] = time_id
 
-        print(f"Time dimension IDs available: {len(time_ids)}")
+        print(
+            f"Time dimension IDs available: "
+            f"{len(time_ids)}"
+        )
 
+        # -----------------------------------------------------
+        # 7. DIM_CITY
+        # -----------------------------------------------------
 
         unique_cities = {}
 
         for row in normalized_rows:
+
             city = row["city"]
 
             if city not in unique_cities:
+
                 unique_cities[city] = (
                     city,
                     row["country"],
@@ -253,6 +293,7 @@ def load() -> int:
         print(f"Unique cities: {len(city_rows)}")
 
         with conn.cursor() as cur:
+
             execute_values(
                 cur,
                 """
@@ -273,7 +314,6 @@ def load() -> int:
                 city_rows,
             )
 
-            # Récupération directe des IDs.
             cur.execute(
                 """
                 SELECT id, city_name
@@ -286,33 +326,47 @@ def load() -> int:
                 for city_id, city_name in cur.fetchall()
             }
 
-        print(f"City dimension IDs available: {len(city_ids)}")
+        print(
+            f"City dimension IDs available: "
+            f"{len(city_ids)}"
+        )
 
+        # -----------------------------------------------------
+        # 8. Préparation de FACT_AIR_QUALITY
+        # -----------------------------------------------------
 
         fact_rows = []
+
         skipped_time = 0
         skipped_city = 0
 
         for row in normalized_rows:
+
             time_id = time_ids.get(row["datetime"])
             city_id = city_ids.get(row["city"])
 
             if time_id is None:
+
                 skipped_time += 1
+
                 print(
                     f"WARNING: missing time_id for "
                     f"{row['datetime']}",
                     file=sys.stderr,
                 )
+
                 continue
 
             if city_id is None:
+
                 skipped_city += 1
+
                 print(
                     f"WARNING: missing city_id for "
                     f"{row['city']}",
                     file=sys.stderr,
                 )
+
                 continue
 
             fact_rows.append(
@@ -336,17 +390,24 @@ def load() -> int:
         print(f"Skipped rows - missing city: {skipped_city}")
 
         if not fact_rows:
+
             print(
                 "ERROR: no fact rows prepared. "
                 "Nothing will be inserted.",
                 file=sys.stderr,
             )
+
             conn.rollback()
             conn.close()
+
             return 1
 
+        # -----------------------------------------------------
+        # 9. Insertion dans FACT_AIR_QUALITY
+        # -----------------------------------------------------
 
         with conn.cursor() as cur:
+
             execute_values(
                 cur,
                 """
@@ -365,7 +426,9 @@ def load() -> int:
                         nh3
                     )
                 VALUES %s
+
                 ON CONFLICT (time_id, city_id)
+
                 DO UPDATE SET
                     aqi = EXCLUDED.aqi,
                     co = EXCLUDED.co,
@@ -383,10 +446,12 @@ def load() -> int:
         conn.commit()
 
         print(
-            f"Loaded {len(fact_rows)} rows into fact_air_quality"
+            f"Loaded {len(fact_rows)} rows "
+            f"into fact_air_quality"
         )
 
     except Exception as e:
+
         conn.rollback()
 
         print(
@@ -395,6 +460,7 @@ def load() -> int:
         )
 
         conn.close()
+
         return 1
 
     conn.close()
