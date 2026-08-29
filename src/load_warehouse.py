@@ -1,4 +1,3 @@
-```python
 import csv
 import os
 import sys
@@ -472,4 +471,3 @@ def load() -> int:
 
 if __name__ == "__main__":
     sys.exit(load())
-```
