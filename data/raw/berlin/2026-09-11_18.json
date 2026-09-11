@@ -1,0 +1,1 @@
+{"coord": {"lon": 13.405, "lat": 52.52}, "list": [{"main": {"aqi": 1}, "components": {"co": 172.92, "no": 0, "no2": 18.28, "o3": 51.25, "so2": 1.74, "pm2_5": 5.05, "pm10": 8.01, "nh3": 10.81}, "dt": 1789152484}], "_meta": {"city": "berlin", "country": "DE", "source": "openweathermap"}}
