@@ -101,6 +101,40 @@ def _parse_openmeteo(data: dict) -> list[dict]:
         rows.append(row)
     return rows
 
+def _clean_row(row: dict) -> dict | None:
+  
+    if not row.get("datetime"):
+        return None
+
+    row["city"] = (row.get("city") or "unknown").strip().title()
+    row["country"] = (row.get("country") or "").strip().upper()
+
+    def _to_float(val, lo=None):
+
+        try:
+            f = float(val)
+        except (TypeError, ValueError):
+            return None
+        if lo is not None and f < lo:
+            return None
+        return f
+
+    lat = _to_float(row.get("latitude"))
+    row["latitude"] = lat if lat is not None and -90 <= lat <= 90 else None
+
+    lon = _to_float(row.get("longitude"))
+    row["longitude"] = lon if lon is not None and -180 <= lon <= 180 else None
+
+    for pollutant in ("co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3"):
+        row[pollutant] = _to_float(row.get(pollutant), lo=0)
+    
+    aqi_raw = row.get("aqi")
+    try:
+        row["aqi"] = int(aqi_raw)
+    except (TypeError, ValueError):
+        row["aqi"] = None
+
+    return row
 
 def _parse_file(path: str) -> list[dict] | None:
     try:
@@ -130,6 +164,8 @@ def transform():
             parsed = _parse_file(path)
             if parsed:
                 all_rows.extend(parsed)
+                
+    all_rows = [r for r in (_clean_row(row) for row in all_rows) if r is not None]            
 
     seen = set()
     unique = []
